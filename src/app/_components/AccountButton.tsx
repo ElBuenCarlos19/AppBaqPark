@@ -1,14 +1,17 @@
-import React from "react";
+import {useState} from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Pressable, StyleSheet, Text, Alert } from "react-native";
+import { UserModal } from "./userModal";
 
 export default function AccountButton() {
+  const [UserModalVisible, setUserModalVisible] = useState(false);
     const handleAccountPress = () => {
-        Alert.alert("Cuenta", "¡Bienvenido a tu cuenta!");
+        setUserModalVisible(true);
 }
     
     
   return (
+    <>
     <View style={styles.container}>
       <Pressable style={styles.accountButton} onPress={handleAccountPress}>
         <Ionicons
@@ -19,6 +22,8 @@ export default function AccountButton() {
         />
       </Pressable>
     </View>
+    <UserModal visible={UserModalVisible} setVisible={setUserModalVisible} />
+    </>
   );
 }
 
