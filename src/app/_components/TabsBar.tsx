@@ -15,11 +15,11 @@ export default function TabsBar() {
           let iconName;
 
           if (route.name === "SearchMaps") {
-            iconName = focused ? "home" : "home-outline";
+            iconName = focused ? "earth" : "earth-outline";
           } else if (route.name === "Rutines") {
-            iconName = focused ? "search" : "search-outline";
+            iconName = focused ? "barbell" : "barbell-outline";
           } else if (route.name === "MachineInfo") {
-            iconName = focused ? "person" : "person-outline";
+            iconName = focused ? "bicycle" : "bicycle-outline";
           } else if (route.name === "Settings") {
             iconName = focused ? "settings" : "settings-outline";
           }
