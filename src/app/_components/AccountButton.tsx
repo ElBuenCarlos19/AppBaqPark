@@ -30,8 +30,8 @@ export default function AccountButton() {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    right: 10,
-    top: 10,
+    left: 10,
+    top: 5,
     zIndex: 10,
   },
   accountButton: {

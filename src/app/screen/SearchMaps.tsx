@@ -1,10 +1,25 @@
-import React from "react";
-import MapView from "react-native-maps";
+import React, { useEffect } from "react";
+import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import { useState } from "react";
 import { StyleSheet, View, Pressable, Text, Alert } from "react-native";
 import AccountButton from "../_components/AccountButton";
+import { locationPermission } from "../util/locationPermission";
+import * as Location from "expo-location";
+
 export default function SearchMaps() {
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [showInfoContainer, setShowInfoContainer] = useState(false);
+  useEffect(() => {
+    locationPermission(Location, setLocation, setErrorMsg);
+  }, []);
+
+  const initialRegion = {
+    latitude: 10.9878,
+    longitude: -74.7889,
+    latitudeDelta: 0.0922,
+    longitudeDelta: 0.0298,
+  };
 
   return (
     <View style={styles.container}>
@@ -17,8 +32,8 @@ export default function SearchMaps() {
         <Pressable
           style={{
             position: "absolute",
-            top: 10, 
-            right: 10, 
+            top: 10,
+            right: 10,
             padding: 10,
           }}
           onPress={() => setShowInfoContainer(!showInfoContainer)}
@@ -46,12 +61,9 @@ export default function SearchMaps() {
       <AccountButton />
       <MapView
         style={styles.map}
-        initialRegion={{
-          latitude: 10.9878,
-          longitude: -74.7889,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0298,
-        }}
+        showsUserLocation={true}
+        provider={PROVIDER_DEFAULT}
+        initialRegion={initialRegion}
       />
       <View
         style={{
