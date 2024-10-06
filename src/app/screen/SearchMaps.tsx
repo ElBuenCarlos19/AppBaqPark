@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
-import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_DEFAULT } from "react-native-maps";
 import { useState } from "react";
-import { StyleSheet, View, Pressable, Text, Alert } from "react-native";
+import { StyleSheet, View } from "react-native";
 import AccountButton from "../_components/AccountButton";
 import { locationPermission } from "../util/locationPermission";
 import * as Location from "expo-location";
 import { OptionsMap } from "../_components/OptionsMap";
 import { InfoParks } from "../_components/InfoParks";
+import { StatusBar } from "expo-status-bar";
 
 export default function SearchMaps() {
   const [location, setLocation] = useState(null);
@@ -25,7 +26,11 @@ export default function SearchMaps() {
 
   return (
     <View style={styles.container}>
-      <InfoParks setShowInfoContainer={setShowInfoContainer} showInfoContainer={showInfoContainer} />
+      <StatusBar style="dark" />
+      <InfoParks
+        setShowInfoContainer={setShowInfoContainer}
+        showInfoContainer={showInfoContainer}
+      />
       <AccountButton />
       <MapView
         style={styles.map}
@@ -33,7 +38,10 @@ export default function SearchMaps() {
         provider={PROVIDER_DEFAULT}
         initialRegion={initialRegion}
       />
-      <OptionsMap setShowInfoContainer={setShowInfoContainer} showInfoContainer={showInfoContainer} />
+      <OptionsMap
+        setShowInfoContainer={setShowInfoContainer}
+        showInfoContainer={showInfoContainer}
+      />
     </View>
   );
 }
@@ -48,5 +56,5 @@ const styles = StyleSheet.create({
     height: "65%",
     borderRadius: 10,
     zIndex: 0,
-  }
+  },
 });
