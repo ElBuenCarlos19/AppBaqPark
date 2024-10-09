@@ -2,7 +2,6 @@ import React from "react";
 import { View } from "react-native";
 import { Link } from "expo-router";
 import { StyleSheet } from "react-native";
-import Login from "./auth/Login";
 
 export default function Page() {
   return (

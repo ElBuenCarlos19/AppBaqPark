@@ -4,13 +4,29 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
 } from "react-native";
+import 'react-native-url-polyfill/auto';
+import { useLoginAuthentication } from "../auth/LoginAuthentication";
+import { supabase } from "../lib/supabase";
+import { Session } from "@supabase/supabase-js";
+import { useState, useEffect } from "react";
+import Login from "./Login";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 
 const UserModal = ({ visible, setVisible }) => {
-  const session = false; //simulado verificacion de sesion
+  const {signOut} = useLoginAuthentication();
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+  }, [])
+
   return (
     <Modal
       animationType="slide"
@@ -36,6 +52,12 @@ const UserModal = ({ visible, setVisible }) => {
             </Pressable>
             <Pressable
               style={[styles.button, styles.closeButton]}
+              onPress={() => signOut()}
+            >
+              <Text style={styles.buttonText}>Cerrar sesion</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.button, styles.closeButton]}
               onPress={() => setVisible(false)}
             >
               <Text style={styles.buttonText}>Cerrar</Text>
@@ -46,22 +68,12 @@ const UserModal = ({ visible, setVisible }) => {
             <Text style={styles.titleText}>{"LOGIN"}</Text>
             <Text>
               aun no tienes cuenta? {""}
-              <Link style={styles.register} href="#">
+              <Link style={styles.register} href="/_components/SignUp">
                 Registrate
               </Link>
             </Text>
-
-            <TextInput style={styles.input} placeholder="Email"></TextInput>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              secureTextEntry={true}
-            ></TextInput>
+            <Login styles={styles}/>
             <View style={styles.spacer} />
-
-            <Pressable style={styles.button}>
-              <Text style={styles.buttonText}>{"iniciar sesion"}</Text>
-            </Pressable>
             <Pressable
               style={[styles.button, styles.closeButton]}
               onPress={() => setVisible(false)}
