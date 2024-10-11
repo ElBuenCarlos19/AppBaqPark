@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE, Marker } from "react-native-maps";
 import { useState } from "react";
 import { StyleSheet, View, Pressable, Text, Alert } from "react-native";
 import AccountButton from "../_components/AccountButton";
@@ -15,10 +15,10 @@ export default function SearchMaps() {
   }, []);
 
   const initialRegion = {
-    latitude: 10.9878,
-    longitude: -74.7889,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0298,
+    latitude: 11.0013802,
+    longitude: -74.8242111,
+    latitudeDelta: 0,
+    longitudeDelta: 0,
   };
 
   return (
