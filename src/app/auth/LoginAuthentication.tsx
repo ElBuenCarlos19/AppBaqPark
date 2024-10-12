@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../util/supabase';
 import { LoginProps } from '../util/types';
 
 export const useLoginAuthentication = () => {
