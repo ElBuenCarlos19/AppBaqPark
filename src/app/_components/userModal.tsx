@@ -7,7 +7,7 @@ import {
 } from "react-native";
 import 'react-native-url-polyfill/auto';
 import { useLoginAuthentication } from "../auth/LoginAuthentication";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../util/supabase";
 import { Session } from "@supabase/supabase-js";
 import { useState, useEffect } from "react";
 import Login from "./Login";
