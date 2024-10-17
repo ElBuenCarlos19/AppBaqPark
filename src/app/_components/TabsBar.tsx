@@ -9,7 +9,6 @@ export default function TabsBar() {
     detachInactiveScreens={true}
     initialRouteName="SearchMaps"
     backBehavior="initialRoute"
-    
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;

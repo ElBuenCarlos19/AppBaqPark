@@ -8,6 +8,7 @@ export function OptionsMap({ setShowInfoContainer, showInfoContainer }) {
                 marginTop: 30,
                 flexDirection: "row",
                 gap: 30,
+                opacity: 0
             }}
         >
             <Pressable
@@ -20,7 +21,7 @@ export function OptionsMap({ setShowInfoContainer, showInfoContainer }) {
                 <Text style={styles.buttonText}>Buscar</Text>
             </Pressable>
         </View>
-        <View style={{ marginTop: 30 }}>
+        <View style={{ marginTop: 30, opacity: 0 }}>
             <Pressable style={styles.buttonList}>
                 <Text style={styles.buttonText}>Ver listado de parques</Text>
             </Pressable>
