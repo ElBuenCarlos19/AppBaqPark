@@ -12,6 +12,5 @@
     "global.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "nativewind-env.d.ts",
-    "supabase.config.ts"  ]
+    "nativewind-env.d.ts"  ]
 }

@@ -18,12 +18,7 @@
     "name": "AppBaqPark",
     "slug": "AppBaqPark",
     "android": {
-      "package": "com.appbaqpark",
-      "config": {
-        "googleMaps": {
-          "apiKey": "GOOGLE_MAPS_API_KEY"
-        }
-    }
+      "package": "com.appbaqpark"
   },
     "extra": {
       "eas": {

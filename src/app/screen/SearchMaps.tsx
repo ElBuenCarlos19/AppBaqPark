@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import MapView, { PROVIDER_DEFAULT, Marker, Polyline } from "react-native-maps";
+import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE, Marker, Polyline } from "react-native-maps";
 import { StyleSheet, View } from "react-native";
 import AccountButton from "../_components/AccountButton";
 import * as Location from "expo-location";
@@ -9,8 +9,9 @@ import { StatusBar } from "expo-status-bar";
 import parques from "parques.json";
 import axios from "axios";
 import { ActivityIndicator, MD2Colors } from "react-native-paper";
-
-const GOOGLE_MAPS_APIKEY = "AIzaSyC5IcYp6msM8E_l6ULSqKFMvSeUW_G3ZqE";
+import Constants from "expo-constants";
+//Constants.expoConfig.extra.GOOGLE_MAPS_API_KEY Esta mierda me serviria si no fuera por que aun no se como hacer que funcione
+const GOOGLE_MAPS_APIKEY = process.env.EXPO_PUBLIC_PARKS_KEY;
 
 export default function SearchMaps() {
   const [showInfoContainer, setShowInfoContainer] = useState(false);
@@ -99,7 +100,7 @@ export default function SearchMaps() {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${startCoords.latitude},${startCoords.longitude}&destination=${endCoords.latitude},${endCoords.longitude}&key=${GOOGLE_MAPS_APIKEY}`
       );
-
+      console.log(response.data);
       const points = decodePolyline(
         response.data.routes[0].overview_polyline.points
       );
@@ -186,8 +187,8 @@ export default function SearchMaps() {
               <Marker
                 key={index}
                 coordinate={{
-                  latitude: parseFloat(parque.latitude),
-                  longitude: parseFloat(parque.longitude),
+                  latitude: parseFloat(String(parque.latitude)),
+                  longitude: parseFloat(String(parque.longitude)),
                 }}
                 title={parque.Column2}
                 description={parque.Column3}
