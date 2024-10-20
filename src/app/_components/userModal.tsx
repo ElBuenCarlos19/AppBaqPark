@@ -6,27 +6,13 @@ import {
   Text,
 } from "react-native";
 import 'react-native-url-polyfill/auto';
-import { useLoginAuthentication } from "../auth/LoginAuthentication";
-import { supabase } from "../util/supabase";
-import { Session } from "@supabase/supabase-js";
-import { useState, useEffect } from "react";
+import { useAuthentication } from "../auth/AuthenticationContext";
 import Login from "./Login";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 
 const UserModal = ({ visible, setVisible }) => {
-  const {signOut} = useLoginAuthentication();
-  const [session, setSession] = useState<Session | null>(null);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-  }, [])
-
+  const {session, signOut} = useAuthentication();
   return (
     <Modal
       animationType="slide"
