@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { View, Pressable, StyleSheet, Text, Alert } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { UserModal } from "./userModal";
 
 export default function AccountButton() {
@@ -12,14 +12,14 @@ export default function AccountButton() {
   return (
     <>
       <View style={styles.container}>
-        <Pressable style={styles.accountButton} onPress={handleAccountPress}>
+        <TouchableOpacity style={styles.accountButton} onPress={handleAccountPress} activeOpacity={0.7}>
           <Ionicons
             style={styles.iconAccount}
             name="person-outline"
             size={32}
             color="white"
           />
-        </Pressable>
+        </TouchableOpacity>
       </View>
       <UserModal visible={UserModalVisible} setVisible={setUserModalVisible} />
     </>

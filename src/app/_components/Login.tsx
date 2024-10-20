@@ -1,7 +1,7 @@
 import { Pressable, Text, TextInput } from "react-native";
-import { useLoginAuthentication } from "../auth/LoginAuthentication";
+import { useAuthentication } from "../auth/AuthenticationContext";
 export default function Login({styles}) {
-  const { data, handleInput, loading, signInWithEmail } = useLoginAuthentication();
+  const { data, handleInput, loading, signInWithEmail } = useAuthentication();
   return (
     <>
       <Text>Login</Text>

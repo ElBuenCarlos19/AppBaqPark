@@ -16,6 +16,7 @@ export const useLoginAuthentication = () => {
             alert(error.message);
         } else {
             alert('Logged in successfully');
+            setData({ email: '', password: '', confirmPassword: '' });
         }
         setLoading(false);
     };

@@ -1,10 +1,10 @@
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
-import { useLoginAuthentication } from '../auth/LoginAuthentication';
+import { useAuthentication } from '../auth/AuthenticationContext';
 import { useRouter } from 'expo-router';
 
 const SignUp = () => {
     const router = useRouter();
-    const { data, handleInput, signUpWithEmail } = useLoginAuthentication();
+    const { data, handleInput, signUpWithEmail } = useAuthentication();
 
     const handleSignUp = () => {
         if(data.email !== '' || data.password !== '' || data.confirmPassword !== ''){
