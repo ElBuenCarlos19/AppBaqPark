@@ -1,12 +1,35 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
-import { StyleSheet, View, Text, TouchableOpacity, Animated, FlatList, PanResponder, Modal, Alert, Image } from "react-native";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  FlatList,
+  PanResponder,
+  Modal,
+  Alert,
+  Image,
+} from "react-native";
 import MapView, { PROVIDER_DEFAULT, Marker, Polyline } from "react-native-maps";
 import { StatusBar } from "expo-status-bar";
 import * as Location from "expo-location";
-import { ActivityIndicator, MD2Colors, Button, IconButton, Card } from "react-native-paper";
-import { Ionicons } from '@expo/vector-icons';
+import {
+  ActivityIndicator,
+  MD2Colors,
+  Button,
+  IconButton,
+  Card,
+} from "react-native-paper";
+import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
-
+import theme from "../../theme.js";
 import AccountButton from "../_components/AccountButton";
 import { InfoParks } from "../_components/InfoParks";
 import parques from "parques.json";
@@ -21,7 +44,7 @@ const SkeletonItem = () => (
     <View style={styles.skeletonIcon} />
     <View style={styles.skeletonInfo}>
       <View style={styles.skeletonText} />
-      <View style={[styles.skeletonText, { width: '60%' }]} />
+      <View style={[styles.skeletonText, { width: "60%" }]} />
     </View>
   </View>
 );
@@ -49,34 +72,44 @@ export default function SearchMaps() {
   const animation = useRef(new Animated.Value(DRAWER_MIN_HEIGHT)).current;
   const mapRef = useRef(null);
 
-  const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => {
-      return Math.abs(gestureState.dy) > 10;
-    },
-    onPanResponderMove: (_, gestureState) => {
-      const newHeight = DRAWER_MIN_HEIGHT - gestureState.dy;
-      if (newHeight >= DRAWER_MIN_HEIGHT && newHeight <= DRAWER_MAX_HEIGHT) {
-        animation.setValue(newHeight);
-      }
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dy < 0) {
-        Animated.spring(animation, {
-          toValue: DRAWER_MAX_HEIGHT,
-          useNativeDriver: false,
-        }).start();
-      } else {
-        Animated.spring(animation, {
-          toValue: DRAWER_MIN_HEIGHT,
-          useNativeDriver: false,
-        }).start();
-      }
-    },
-  }), []);
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return Math.abs(gestureState.dy) > 10;
+        },
+        onPanResponderMove: (_, gestureState) => {
+          const newHeight = DRAWER_MIN_HEIGHT - gestureState.dy;
+          if (
+            newHeight >= DRAWER_MIN_HEIGHT &&
+            newHeight <= DRAWER_MAX_HEIGHT
+          ) {
+            animation.setValue(newHeight);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy < 0) {
+            Animated.spring(animation, {
+              toValue: DRAWER_MAX_HEIGHT,
+              useNativeDriver: false,
+            }).start();
+          } else {
+            Animated.spring(animation, {
+              toValue: DRAWER_MIN_HEIGHT,
+              useNativeDriver: false,
+            }).start();
+          }
+        },
+      }),
+    []
+  );
 
   const toggleDrawer = useCallback(() => {
     Animated.spring(animation, {
-      toValue: (animation as any)._value === DRAWER_MAX_HEIGHT ? DRAWER_MIN_HEIGHT : DRAWER_MAX_HEIGHT,
+      toValue:
+        (animation as any)._value === DRAWER_MAX_HEIGHT
+          ? DRAWER_MIN_HEIGHT
+          : DRAWER_MAX_HEIGHT,
       useNativeDriver: false,
     }).start();
   }, [animation]);
@@ -127,28 +160,31 @@ export default function SearchMaps() {
     return R * c;
   }, []);
 
-  const findNearestPark = useCallback((userCoords, parks) => {
-    let minDistance = Infinity;
-    let closestPark = null;
+  const findNearestPark = useCallback(
+    (userCoords, parks) => {
+      let minDistance = Infinity;
+      let closestPark = null;
 
-    parks.forEach((park) => {
-      if (park.latitude !== "notfound" && park.longitude !== "notfound") {
-        const parkCoords = {
-          latitude: parseFloat(park.latitude),
-          longitude: parseFloat(park.longitude),
-        };
+      parks.forEach((park) => {
+        if (park.latitude !== "notfound" && park.longitude !== "notfound") {
+          const parkCoords = {
+            latitude: parseFloat(park.latitude),
+            longitude: parseFloat(park.longitude),
+          };
 
-        const distance = haversineDistance(userCoords, parkCoords);
+          const distance = haversineDistance(userCoords, parkCoords);
 
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestPark = park;
+          if (distance < minDistance) {
+            minDistance = distance;
+            closestPark = park;
+          }
         }
-      }
-    });
+      });
 
-    return closestPark;
-  }, [haversineDistance]);
+      return closestPark;
+    },
+    [haversineDistance]
+  );
 
   const fetchRoute = useCallback(async (startCoords, park) => {
     const endCoords = {
@@ -207,47 +243,53 @@ export default function SearchMaps() {
     return points;
   }, []);
 
-  const renderParkItem = useCallback(({ item }) => {
-    if (isLoading) {
-      return <SkeletonItem />;
-    }
-    return (
-      <TouchableOpacity 
-        style={styles.parkItem}
-        onPress={() => {
-          if (mapRef.current) {
-            mapRef.current.animateToRegion({
-              latitude: parseFloat(item.latitude),
-              longitude: parseFloat(item.longitude),
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.005,
-            }, 1000);
-          }
-        }}
-      >
-        <View style={styles.parkIcon}>
-          <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
-        </View>
-        <View style={styles.parkInfo}>
-          <Text style={styles.parkName}>{item.Column2}</Text>
-          <Text style={styles.parkDistance}>{item.Column3}</Text>
-        </View>
-      </TouchableOpacity>
-    );
-  }, [isLoading]);
+  const renderParkItem = useCallback(
+    ({ item }) => {
+      if (isLoading) {
+        return <SkeletonItem />;
+      }
+      return (
+        <TouchableOpacity
+          style={styles.parkItem}
+          onPress={() => {
+            if (mapRef.current) {
+              mapRef.current.animateToRegion(
+                {
+                  latitude: parseFloat(item.latitude),
+                  longitude: parseFloat(item.longitude),
+                  latitudeDelta: 0.005,
+                  longitudeDelta: 0.005,
+                },
+                1000
+              );
+            }
+          }}
+        >
+          <View style={styles.parkIcon}>
+            <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
+          </View>
+          <View style={styles.parkInfo}>
+            <Text style={styles.parkName}>{item.Column2}</Text>
+            <Text style={styles.parkDistance}>{item.Column3}</Text>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [isLoading]
+  );
 
-  const memoizedParques = useMemo(() => parques, []);
+  const memoizedParques = useMemo(() => parques.filter(parque => parque.latitude !== "notfound" && parque.longitude !== "notfound"), []);
 
   const handleNearestParkPress = useCallback(() => {
     if (location) {
-      if (selectedButton === 'cercano') {
+      if (selectedButton === "cercano") {
         setSelectedButton(null);
         setNearestPark(null);
         setRouteCoordinates([]);
       } else {
         const closest = findNearestPark(location.coords, memoizedParques);
         setNearestPark(closest);
-        setSelectedButton('cercano');
+        setSelectedButton("cercano");
         if (closest) {
           fetchRoute(location.coords, closest);
         }
@@ -256,10 +298,10 @@ export default function SearchMaps() {
   }, [location, memoizedParques, findNearestPark, fetchRoute, selectedButton]);
 
   const handleOptimalParkPress = useCallback(() => {
-    if (selectedButton === 'optimo') {
+    if (selectedButton === "optimo") {
       setSelectedButton(null);
     } else {
-      setSelectedButton('optimo');
+      setSelectedButton("optimo");
       setNearestPark(null);
       setRouteCoordinates([]);
       Alert.alert(
@@ -278,7 +320,7 @@ export default function SearchMaps() {
 
   if (!location) {
     return (
-      <View style={{...styles.container, flex: 1, justifyContent: "center"}}>
+      <View style={{ ...styles.container, flex: 1, justifyContent: "center" }}>
         <ActivityIndicator size={100} color={MD2Colors.green600} />
       </View>
     );
@@ -324,7 +366,7 @@ export default function SearchMaps() {
           }
           return null;
         })}
-        {routeCoordinates.length > 0 && selectedButton === 'cercano' && (
+        {routeCoordinates.length > 0 && selectedButton === "cercano" && (
           <Polyline
             coordinates={routeCoordinates}
             strokeWidth={4}
@@ -333,12 +375,12 @@ export default function SearchMaps() {
         )}
       </MapView>
       <TouchableOpacity style={styles.tipButton} onPress={handleTipPress}>
-        <Image 
-          source={require('../../../assets/tip-icon.jpg')}
+        <Image
+          source={require("../../../assets/tip-icon.jpg")}
           style={styles.tipIcon}
         />
       </TouchableOpacity>
-      <Animated.View 
+      <Animated.View
         style={[styles.drawer, { height: animation }]}
         {...panResponder.panHandlers}
       >
@@ -346,20 +388,40 @@ export default function SearchMaps() {
           <View style={styles.handle} />
         </TouchableOpacity>
         <Text style={styles.drawerTitle}>Parques</Text>
-        
+
         <View style={styles.buttonContainer}>
           <Button
-            mode={selectedButton === 'cercano' ? 'contained' : 'outlined'}
+            mode={selectedButton === "cercano" ? "contained" : "outlined"}
             onPress={handleNearestParkPress}
             icon="map-marker-radius"
+            textColor={
+              selectedButton === "cercano"
+                ? theme.colors.text
+                : theme.colors.primary
+            }
+            buttonColor={
+              selectedButton === "cercano"
+                ? theme.colors.primary
+                : theme.colors.text
+            }
             style={styles.button}
           >
             Cercano
           </Button>
           <Button
-            mode={selectedButton === 'optimo' ? 'contained' : 'outlined'}
+            mode={selectedButton === "optimo" ? "contained" : "outlined"}
             onPress={handleOptimalParkPress}
             icon="star"
+            textColor={
+              selectedButton === "optimo"
+                ? theme.colors.text
+                : theme.colors.primary
+            }
+            buttonColor={
+              selectedButton === "optimo"
+                ? theme.colors.primary
+                : theme.colors.text
+            }
             style={styles.button}
           >
             Optimo
@@ -391,9 +453,16 @@ export default function SearchMaps() {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Información</Text>
-            <Text>Aquí puedes encontrar información sobre los tipos de parques:</Text>
-            <Text>- Parque cercano:  El parque más próximo a tu ubicación actual.</Text>
-            <Text>- Parque óptimo: Un parque sugerido basado en tus preferencias y actividades populares (función aún no implementada).</Text>
+            <Text>
+              Aquí puedes encontrar información sobre los tipos de parques:
+            </Text>
+            <Text>
+              - Parque cercano: El parque más próximo a tu ubicación actual.
+            </Text>
+            <Text>
+              - Parque óptimo: Un parque sugerido basado en tus preferencias y
+              actividades populares (función aún no implementada).
+            </Text>
             <Button onPress={() => setShowInfoModal(false)}>Cerrar</Button>
           </View>
         </View>
@@ -431,11 +500,11 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   drawer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -447,24 +516,24 @@ const styles = StyleSheet.create({
     zIndex: 9,
   },
   drawerHandle: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 10,
   },
   handle: {
     width: 40,
     height: 5,
-    backgroundColor: '#ccc',
+    backgroundColor: "#ccc",
     borderRadius: 3,
   },
   drawerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
   },
   button: {
@@ -475,19 +544,19 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   parkItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   parkIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#E8F5E9",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
   },
   parkInfo: {
@@ -495,24 +564,24 @@ const styles = StyleSheet.create({
   },
   parkName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   parkDistance: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   skeletonItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
   },
   skeletonIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     marginRight: 10,
   },
   skeletonInfo: {
@@ -520,31 +589,31 @@ const styles = StyleSheet.create({
   },
   skeletonText: {
     height: 16,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     marginBottom: 5,
     borderRadius: 4,
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   tipButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 160,
     right: 10,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 30,
     padding: 10,
     elevation: 5,
@@ -556,12 +625,12 @@ const styles = StyleSheet.create({
   },
   tipModalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   tipModalContent: {
-    width: '80%',
+    width: "80%",
     padding: 20,
   },
   tipText: {

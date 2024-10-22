@@ -9,8 +9,8 @@ export default function MachineInfo() {
         style={styles.profileImage}
         source={{uri: 'https://via.placeholder.com/150'}}
       />
-      <Text style={styles.name}>Nombre de Usuario</Text>
-      <Text style={styles.bio}>Esta es una breve biografía del usuario.</Text>
+      <Text style={styles.name}>Informacion de las maquinas</Text>
+      <Text style={styles.bio}></Text>
     </View>
   );
 }
