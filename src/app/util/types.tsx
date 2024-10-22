@@ -13,7 +13,9 @@ interface LoginAuthentication {
         signUpWithEmail: () => Promise<void>; // Método para registrarse
         loading: boolean; // Estado de carga
         signOut: () => Promise<void>; // Método para cerrar sesión
-    }
-
-export type { LoginProps, LoginAuthentication };
+    };
+    interface RoutineItemProps {
+        routine: { title: string; image: any };
+    };
+export type { LoginProps, LoginAuthentication, RoutineItemProps };
 

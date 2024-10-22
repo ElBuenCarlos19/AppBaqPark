@@ -7,20 +7,20 @@ import {
 } from "react-native";
 import 'react-native-url-polyfill/auto';
 import { useAuthentication } from "../auth/AuthenticationContext";
+import {useModalContext} from './userModalDisplayContext'
 import Login from "./Login";
 import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 
-const UserModal = ({ visible, setVisible }) => {
+const UserModal = () => {
+  const {visible,close} = useModalContext();
   const {session, signOut} = useAuthentication();
   return (
     <Modal
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={() => {
-        setVisible(false);
-      }}
+      onRequestClose={close}
     >
       <View style={styles.modalBackground}>
         {session ? (
@@ -44,7 +44,7 @@ const UserModal = ({ visible, setVisible }) => {
             </Pressable>
             <Pressable
               style={[styles.button, styles.closeButton]}
-              onPress={() => setVisible(false)}
+              onPress={close}
             >
               <Text style={styles.buttonText}>Cerrar</Text>
             </Pressable>
@@ -62,7 +62,7 @@ const UserModal = ({ visible, setVisible }) => {
             <View style={styles.spacer} />
             <Pressable
               style={[styles.button, styles.closeButton]}
-              onPress={() => setVisible(false)}
+              onPress={close}
             >
               <Text style={styles.buttonText}>Cancelar</Text>
             </Pressable>

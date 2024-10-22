@@ -1,18 +1,15 @@
-import { useState } from "react";
+import { useModalContext } from "./userModalDisplayContext";
 import { Ionicons } from "@expo/vector-icons";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { UserModal } from "./userModal";
 
 export default function AccountButton() {
-  const [UserModalVisible, setUserModalVisible] = useState(false);
-  const handleAccountPress = () => {
-    setUserModalVisible(true);
-  };
+  const {open} = useModalContext();
 
   return (
     <>
       <View style={styles.container}>
-        <TouchableOpacity style={styles.accountButton} onPress={handleAccountPress} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.accountButton} onPress={open} activeOpacity={0.7}>
           <Ionicons
             style={styles.iconAccount}
             name="person-outline"
@@ -21,7 +18,7 @@ export default function AccountButton() {
           />
         </TouchableOpacity>
       </View>
-      <UserModal visible={UserModalVisible} setVisible={setUserModalVisible} />
+      <UserModal />
     </>
   );
 }
