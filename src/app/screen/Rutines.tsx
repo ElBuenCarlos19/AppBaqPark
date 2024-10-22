@@ -4,10 +4,10 @@ import AccountButton from '../_components/AccountButton';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { Ionicons } from '@expo/vector-icons';
 const routineTypes = [
-  { title: 'Rutinas Básicas', image: require('./assets/basic.png') },
-  { title: 'Rutinas Intermedias', image: require('./assets/intermediate.png') },
-  { title: 'Rutinas Avanzadas', image: require('./assets/advanced.png') },
-  { title: 'Rutinas Personalizadas', image: require('./assets/customLock.png') },
+  { title: 'Rutinas Básicas', image: require('../../../assets/basic.png') },
+  { title: 'Rutinas Intermedias', image: require('../../../assets/intermediate.png') },
+  { title: 'Rutinas Avanzadas', image: require('../../../assets/advanced.png') },
+  { title: 'Rutinas Personalizadas', image: require('../../../assets/customLock.png') },
 ];
 const {height} = Dimensions.get('window');
 export default function Rutines() {

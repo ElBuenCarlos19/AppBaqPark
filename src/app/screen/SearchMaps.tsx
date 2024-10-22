@@ -1,17 +1,39 @@
-import React, { useEffect, useState } from "react";
-import MapView, { PROVIDER_DEFAULT, PROVIDER_GOOGLE, Marker, Polyline } from "react-native-maps";
-import { StyleSheet, View } from "react-native";
-import AccountButton from "../_components/AccountButton";
-import * as Location from "expo-location";
-import { OptionsMap } from "../_components/OptionsMap";
-import { InfoParks } from "../_components/InfoParks";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { StyleSheet, View, Text, TouchableOpacity, Animated, FlatList, PanResponder, Modal, Alert, Image } from "react-native";
+import MapView, { PROVIDER_DEFAULT, Marker, Polyline } from "react-native-maps";
 import { StatusBar } from "expo-status-bar";
-import parques from "parques.json";
+import * as Location from "expo-location";
+import { ActivityIndicator, MD2Colors, Button, IconButton, Card } from "react-native-paper";
+import { Ionicons } from '@expo/vector-icons';
 import axios from "axios";
-import { ActivityIndicator, MD2Colors } from "react-native-paper";
-import Constants from "expo-constants";
-//Constants.expoConfig.extra.GOOGLE_MAPS_API_KEY Esta mierda me serviria si no fuera por que aun no se como hacer que funcione
+
+import AccountButton from "../_components/AccountButton";
+import { InfoParks } from "../_components/InfoParks";
+import parques from "parques.json";
+
 const GOOGLE_MAPS_APIKEY = process.env.EXPO_PUBLIC_PARKS_KEY;
+
+const DRAWER_MIN_HEIGHT = 150;
+const DRAWER_MAX_HEIGHT = 400;
+
+const SkeletonItem = () => (
+  <View style={styles.skeletonItem}>
+    <View style={styles.skeletonIcon} />
+    <View style={styles.skeletonInfo}>
+      <View style={styles.skeletonText} />
+      <View style={[styles.skeletonText, { width: '60%' }]} />
+    </View>
+  </View>
+);
+
+const tips = [
+  "Cuida los parques biosaludables",
+  "Mantén limpio el parque, usa las papeleras",
+  "Respeta las áreas verdes, no pises el césped",
+  "Usa los equipos de ejercicio correctamente",
+  "Lleva agua para mantenerte hidratado durante el ejercicio",
+  "Respeta a los demás usuarios del parque",
+];
 
 export default function SearchMaps() {
   const [showInfoContainer, setShowInfoContainer] = useState(false);
@@ -19,6 +41,45 @@ export default function SearchMaps() {
   const [nearestPark, setNearestPark] = useState(null);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedButton, setSelectedButton] = useState(null);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false);
+  const [currentTip, setCurrentTip] = useState("");
+  const animation = useRef(new Animated.Value(DRAWER_MIN_HEIGHT)).current;
+  const mapRef = useRef(null);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => {
+      return Math.abs(gestureState.dy) > 10;
+    },
+    onPanResponderMove: (_, gestureState) => {
+      const newHeight = DRAWER_MIN_HEIGHT - gestureState.dy;
+      if (newHeight >= DRAWER_MIN_HEIGHT && newHeight <= DRAWER_MAX_HEIGHT) {
+        animation.setValue(newHeight);
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy < 0) {
+        Animated.spring(animation, {
+          toValue: DRAWER_MAX_HEIGHT,
+          useNativeDriver: false,
+        }).start();
+      } else {
+        Animated.spring(animation, {
+          toValue: DRAWER_MIN_HEIGHT,
+          useNativeDriver: false,
+        }).start();
+      }
+    },
+  }), []);
+
+  const toggleDrawer = useCallback(() => {
+    Animated.spring(animation, {
+      toValue: (animation as any)._value === DRAWER_MAX_HEIGHT ? DRAWER_MIN_HEIGHT : DRAWER_MAX_HEIGHT,
+      useNativeDriver: false,
+    }).start();
+  }, [animation]);
 
   useEffect(() => {
     (async () => {
@@ -29,28 +90,26 @@ export default function SearchMaps() {
       }
       let locationWatcher = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 5,
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 10000,
+          distanceInterval: 10,
         },
         async (newLocation) => {
           setLocation(newLocation);
-
-          const closestPark = findNearestPark(newLocation.coords, parques);
-          setNearestPark(closestPark);
-
-          if (closestPark) {
-            fetchRoute(newLocation.coords, closestPark);
-          }
         }
       );
+
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 3000);
 
       return () => {
         locationWatcher.remove();
       };
     })();
   }, []);
-  const haversineDistance = (coords1, coords2) => {
+
+  const haversineDistance = useCallback((coords1, coords2) => {
     const toRad = (value) => (value * Math.PI) / 180;
     const R = 6371; // Radio de la Tierra en km
 
@@ -66,8 +125,9 @@ export default function SearchMaps() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c;
-  };
-  const findNearestPark = (userCoords, parks) => {
+  }, []);
+
+  const findNearestPark = useCallback((userCoords, parks) => {
     let minDistance = Infinity;
     let closestPark = null;
 
@@ -88,9 +148,9 @@ export default function SearchMaps() {
     });
 
     return closestPark;
-  };
+  }, [haversineDistance]);
 
-  const fetchRoute = async (startCoords, park) => {
+  const fetchRoute = useCallback(async (startCoords, park) => {
     const endCoords = {
       latitude: parseFloat(park.latitude),
       longitude: parseFloat(park.longitude),
@@ -100,7 +160,6 @@ export default function SearchMaps() {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/directions/json?origin=${startCoords.latitude},${startCoords.longitude}&destination=${endCoords.latitude},${endCoords.longitude}&key=${GOOGLE_MAPS_APIKEY}`
       );
-      console.log(response.data);
       const points = decodePolyline(
         response.data.routes[0].overview_polyline.points
       );
@@ -108,10 +167,9 @@ export default function SearchMaps() {
     } catch (error) {
       console.error("Error al obtener la ruta:", error);
     }
-  };
+  }, []);
 
-  // Decodificar la polyline recibida de la API de Google Directions
-  const decodePolyline = (t) => {
+  const decodePolyline = useCallback((t) => {
     let points = [];
     let index = 0,
       len = t.length;
@@ -147,9 +205,78 @@ export default function SearchMaps() {
     }
 
     return points;
-  };
+  }, []);
 
-  if (!location || !nearestPark) {
+  const renderParkItem = useCallback(({ item }) => {
+    if (isLoading) {
+      return <SkeletonItem />;
+    }
+    return (
+      <TouchableOpacity 
+        style={styles.parkItem}
+        onPress={() => {
+          if (mapRef.current) {
+            mapRef.current.animateToRegion({
+              latitude: parseFloat(item.latitude),
+              longitude: parseFloat(item.longitude),
+              latitudeDelta: 0.005,
+              longitudeDelta: 0.005,
+            }, 1000);
+          }
+        }}
+      >
+        <View style={styles.parkIcon}>
+          <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
+        </View>
+        <View style={styles.parkInfo}>
+          <Text style={styles.parkName}>{item.Column2}</Text>
+          <Text style={styles.parkDistance}>{item.Column3}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }, [isLoading]);
+
+  const memoizedParques = useMemo(() => parques, []);
+
+  const handleNearestParkPress = useCallback(() => {
+    if (location) {
+      if (selectedButton === 'cercano') {
+        setSelectedButton(null);
+        setNearestPark(null);
+        setRouteCoordinates([]);
+      } else {
+        const closest = findNearestPark(location.coords, memoizedParques);
+        setNearestPark(closest);
+        setSelectedButton('cercano');
+        if (closest) {
+          fetchRoute(location.coords, closest);
+        }
+      }
+    }
+  }, [location, memoizedParques, findNearestPark, fetchRoute, selectedButton]);
+
+  const handleOptimalParkPress = useCallback(() => {
+    if (selectedButton === 'optimo') {
+      setSelectedButton(null);
+    } else {
+      setSelectedButton('optimo');
+      setNearestPark(null);
+      setRouteCoordinates([]);
+      Alert.alert(
+        "Parque Óptimo",
+        "Esta función aún no está implementada. Aquí se agregará el algoritmo para encontrar el parque óptimo en el futuro.",
+        [{ text: "OK" }]
+      );
+    }
+  }, [selectedButton]);
+
+  const handleTipPress = useCallback(() => {
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+    setCurrentTip(randomTip);
+    setShowTipModal(true);
+  }, []);
+
+  if (!location) {
     return (
       <View style={{...styles.container, flex: 1, justifyContent: "center"}}>
         <ActivityIndicator size={100} color={MD2Colors.green600} />
@@ -158,8 +285,7 @@ export default function SearchMaps() {
   }
 
   const initialRegion = {
-    latitude: parseFloat(nearestPark.latitude),
-    longitude: parseFloat(nearestPark.longitude),
+    ...location.coords,
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   };
@@ -173,12 +299,13 @@ export default function SearchMaps() {
       />
       <AccountButton />
       <MapView
+        ref={mapRef}
         style={styles.map}
         showsUserLocation={true}
         provider={PROVIDER_DEFAULT}
         initialRegion={initialRegion}
       >
-        {parques.map((parque, index) => {
+        {memoizedParques.map((parque, index) => {
           if (
             parque.latitude !== "notfound" &&
             parque.longitude !== "notfound"
@@ -197,7 +324,7 @@ export default function SearchMaps() {
           }
           return null;
         })}
-        {routeCoordinates.length > 0 && (
+        {routeCoordinates.length > 0 && selectedButton === 'cercano' && (
           <Polyline
             coordinates={routeCoordinates}
             strokeWidth={4}
@@ -205,25 +332,240 @@ export default function SearchMaps() {
           />
         )}
       </MapView>
+      <TouchableOpacity style={styles.tipButton} onPress={handleTipPress}>
+        <Image 
+          source={require('../../../assets/tip-icon.jpg')}
+          style={styles.tipIcon}
+        />
+      </TouchableOpacity>
+      <Animated.View 
+        style={[styles.drawer, { height: animation }]}
+        {...panResponder.panHandlers}
+      >
+        <TouchableOpacity onPress={toggleDrawer} style={styles.drawerHandle}>
+          <View style={styles.handle} />
+        </TouchableOpacity>
+        <Text style={styles.drawerTitle}>Parques</Text>
+        
+        <View style={styles.buttonContainer}>
+          <Button
+            mode={selectedButton === 'cercano' ? 'contained' : 'outlined'}
+            onPress={handleNearestParkPress}
+            icon="map-marker-radius"
+            style={styles.button}
+          >
+            Cercano
+          </Button>
+          <Button
+            mode={selectedButton === 'optimo' ? 'contained' : 'outlined'}
+            onPress={handleOptimalParkPress}
+            icon="star"
+            style={styles.button}
+          >
+            Optimo
+          </Button>
+          <IconButton
+            icon="information"
+            size={24}
+            onPress={() => setShowInfoModal(true)}
+          />
+        </View>
 
-      <OptionsMap
-        setShowInfoContainer={setShowInfoContainer}
-        showInfoContainer={showInfoContainer}
-      />
+        <FlatList
+          data={isLoading ? Array(10).fill({}) : memoizedParques}
+          renderItem={renderParkItem}
+          keyExtractor={(item, index) => index.toString()}
+          contentContainerStyle={styles.parkList}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      </Animated.View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showInfoModal}
+        onRequestClose={() => setShowInfoModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Información</Text>
+            <Text>Aquí puedes encontrar información sobre los tipos de parques:</Text>
+            <Text>- Parque cercano:  El parque más próximo a tu ubicación actual.</Text>
+            <Text>- Parque óptimo: Un parque sugerido basado en tus preferencias y actividades populares (función aún no implementada).</Text>
+            <Button onPress={() => setShowInfoModal(false)}>Cerrar</Button>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showTipModal}
+        onRequestClose={() => setShowTipModal(false)}
+      >
+        <View style={styles.tipModalContainer}>
+          <Card style={styles.tipModalContent}>
+            <Card.Content>
+              <Text style={styles.tipText}>{currentTip}</Text>
+            </Card.Content>
+            <Card.Actions>
+              <Button onPress={() => setShowTipModal(false)}>Cerrar</Button>
+            </Card.Actions>
+          </Card>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    display: "flex",
-    alignItems: "center",
     flex: 1,
+    alignItems: "center",
   },
   map: {
     width: "100%",
-    height: "65%",
-    borderRadius: 10,
+    height: "100%",
     zIndex: 0,
+  },
+  drawer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 9,
+  },
+  drawerHandle: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    backgroundColor: '#ccc',
+    borderRadius: 3,
+  },
+  drawerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  button: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  parkList: {
+    paddingBottom: 20,
+  },
+  parkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  parkIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  parkInfo: {
+    flex: 1,
+  },
+  parkName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  parkDistance: {
+    fontSize: 14,
+    color: '#666',
+  },
+  skeletonItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  skeletonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E0E0E0',
+    marginRight: 10,
+  },
+  skeletonInfo: {
+    flex: 1,
+  },
+  skeletonText: {
+    height: 16,
+    backgroundColor: '#E0E0E0',
+    marginBottom: 5,
+    borderRadius: 4,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  tipButton: {
+    position: 'absolute',
+    bottom: 160,
+    right: 10,
+    backgroundColor: 'white',
+    borderRadius: 30,
+    padding: 10,
+    elevation: 5,
+    zIndex: 2,
+  },
+  tipIcon: {
+    width: 40,
+    height: 40,
+  },
+  tipModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  tipModalContent: {
+    width: '80%',
+    padding: 20,
+  },
+  tipText: {
+    fontSize: 16,
+    marginBottom: 10,
   },
 });
