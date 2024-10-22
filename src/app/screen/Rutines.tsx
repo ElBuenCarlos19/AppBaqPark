@@ -1,27 +1,57 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, Dimensions, ScrollView } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, SafeAreaView, Dimensions, Animated, PanResponder } from 'react-native';
 import AccountButton from '../_components/AccountButton';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { Ionicons } from '@expo/vector-icons';
+import { useModalContext } from '../_components/userModalDisplayContext';
 const routineTypes = [
   { title: 'Rutinas Básicas', image: require('../../../assets/basic.png') },
   { title: 'Rutinas Intermedias', image: require('../../../assets/intermediate.png') },
   { title: 'Rutinas Avanzadas', image: require('../../../assets/advanced.png') },
   { title: 'Rutinas Personalizadas', image: require('../../../assets/customLock.png') },
 ];
-const {height} = Dimensions.get('window');
-export default function Rutines() {
-  const { session } = useAuthentication();
-  const [expanded, setExpanded] = useState(false); // Controla si el contenido está expandido
 
-  const toggleExpand = () => {
-    setExpanded(!expanded);
-  };
+const { height } = Dimensions.get('window');
+const COLLAPSED_HEIGHT = 60;
+const EXPANDED_HEIGHT = 250;
+export default function Rutines() {
+  const { open } = useModalContext();
+  const { session } = useAuthentication();
+  const pan = useRef(new Animated.ValueXY()).current;
+  const [expanded, setExpanded] = useState<boolean>(false);
+
+  const panResponder = PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (_, gestureState) => {
+      if (gestureState.dy < 0 || expanded) {
+        pan.y.setValue(Math.max(gestureState.dy, COLLAPSED_HEIGHT - EXPANDED_HEIGHT));
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy < -50 || (expanded && gestureState.dy > 50)) {
+        setExpanded(!expanded);
+        Animated.spring(pan.y, {
+          toValue: expanded ? 0 : COLLAPSED_HEIGHT - EXPANDED_HEIGHT,
+          useNativeDriver: false,
+        }).start();
+      } else {
+        Animated.spring(pan.y, {
+          toValue: expanded ? COLLAPSED_HEIGHT - EXPANDED_HEIGHT : 0,
+          useNativeDriver: false,
+        }).start();
+      }
+    },
+  });
+
+  const animatedHeight = pan.y.interpolate({
+    inputRange: [COLLAPSED_HEIGHT - EXPANDED_HEIGHT, 0],
+    outputRange: [EXPANDED_HEIGHT, COLLAPSED_HEIGHT],
+    extrapolate: 'clamp',
+  });
 
   return (
     <SafeAreaView style={styles.container}>
       <AccountButton />
-      {/* Rutinas */}
       <View style={styles.routineGrid}>
         {routineTypes.map((routine, index) => (
           <TouchableOpacity key={index} style={styles.routineItem}>
@@ -31,29 +61,44 @@ export default function Rutines() {
         ))}
       </View>
 
-      {/* Barra de Progreso + Detalles Combinados */}
-      <TouchableOpacity style={styles.progressContainer} onPress={toggleExpand}>
+      <Animated.View
+        style={[styles.progressContainer, { height: animatedHeight }]}
+        {...panResponder.panHandlers}
+        onTouchStart={!session?open:null}
+      >
+        <View style={styles.handle} />
         <View style={styles.progressBar}>
           <Text style={styles.progressText}>TU PROGRESO</Text>
-          {!session && (<Ionicons name={"lock-closed"} size={24} color="white" />)}
-          {session&&(<Ionicons 
-            name={expanded ? "chevron-up" : "chevron-down"} 
-            size={24} 
-            color="white" 
-          />)}
+          {!session && <Ionicons name="lock-closed" size={24} color="white" />}
+          {session && (
+            <Ionicons
+              name={expanded ? "chevron-down" : "chevron-up"}
+              size={24}
+              color="white"
+            />
+          )}
         </View>
 
-        {/* Detalles si está expandido */}
-        {session && expanded && (
-          <View style={styles.detailsContainer}>
+        {session && (
+          <Animated.View
+            style={[
+              styles.detailsContainer,
+              {
+                opacity: pan.y.interpolate({
+                  inputRange: [COLLAPSED_HEIGHT - EXPANDED_HEIGHT, 0],
+                  outputRange: [1, 0],
+                }),
+              },
+            ]}
+          >
             <Text style={styles.detailText}>Días activos: 19</Text>
             <Text style={styles.detailText}>Consumo de agua: Frecuente</Text>
             <Text style={styles.detailText}>Días descansó: 10</Text>
             <Text style={styles.detailText}>Promedio Calorías: 340-200 Kcal/día</Text>
             <Text style={styles.detailText}>Condición física: Óptima</Text>
-          </View>
+          </Animated.View>
         )}
-      </TouchableOpacity>
+      </Animated.View>
     </SafeAreaView>
   );
 }
@@ -69,7 +114,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-around',
     padding: 16,
-    paddingBottom: height*0.1,
+    paddingBottom: height * 0.1,
   },
   routineItem: {
     width: '45%',
@@ -91,24 +136,36 @@ const styles = StyleSheet.create({
   },
   progressContainer: {
     position: 'absolute',
-    top: height*0.50, // Ajusta esta posición para moverlo hacia arriba o abajo
-    left: 16, 
-    right: 16,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: 'hidden',
+  },
+  handle: {
+    width: 40,
+    height: 5,
+    backgroundColor: 'white',
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: 10,
   },
   progressBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    padding: 16,
   },
   progressText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 18,
   },
   detailsContainer: {
-    marginTop: 10,
+    padding: 16,
+    paddingTop: 0,
   },
   detailText: {
     color: 'white',
