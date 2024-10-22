@@ -2,9 +2,10 @@ import React from "react";
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Pressable, StyleSheet, Text } from "react-native";
-
+import { UserModalProvider } from "./userModalDisplayContext";
 export default function TabsBar() {
   return (
+    <UserModalProvider>
     <Tabs
     detachInactiveScreens={true}
     initialRouteName="SearchMaps"
@@ -57,6 +58,7 @@ export default function TabsBar() {
         }}
       />
     </Tabs>
+    </UserModalProvider>
   );
 }
 const styles = StyleSheet.create({
