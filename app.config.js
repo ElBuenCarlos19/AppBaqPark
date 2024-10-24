@@ -31,7 +31,6 @@ export default {
           projectId: "bd34d188-c154-409b-8314-797e6d2ee458",
           secrets: {
             GOOGLE_MAPS_API_KEY: true,
-            PARKS_KEY: true,
           },
         },
       },
