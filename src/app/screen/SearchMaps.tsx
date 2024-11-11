@@ -12,14 +12,12 @@ import {
   TouchableOpacity,
   Animated,
   FlatList,
-  PanResponder,
   Modal,
   Alert,
   Image,
 } from "react-native";
 import MapView, { PROVIDER_DEFAULT, Marker, Polyline } from "react-native-maps";
 import { StatusBar } from "expo-status-bar";
-import * as Location from "expo-location";
 import {
   ActivityIndicator,
   MD2Colors,
@@ -27,36 +25,24 @@ import {
   IconButton,
   Card,
 } from "react-native-paper";
-import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
 import theme from "../../theme.js";
 import AccountButton from "../_components/AccountButton";
 import { InfoParks } from "../_components/InfoParks";
 import parques from "parques.json";
-
-const GOOGLE_MAPS_APIKEY = process.env.EXPO_PUBLIC_PARKS_KEY;
-
-const DRAWER_MIN_HEIGHT = 150;
-const DRAWER_MAX_HEIGHT = 400;
-
-const SkeletonItem = () => (
-  <View style={styles.skeletonItem}>
-    <View style={styles.skeletonIcon} />
-    <View style={styles.skeletonInfo}>
-      <View style={styles.skeletonText} />
-      <View style={[styles.skeletonText, { width: "60%" }]} />
-    </View>
-  </View>
-);
-
-const tips = [
-  "Cuida los parques biosaludables",
-  "Mantén limpio el parque, usa las papeleras",
-  "Respeta las áreas verdes, no pises el césped",
-  "Usa los equipos de ejercicio correctamente",
-  "Lleva agua para mantenerte hidratado durante el ejercicio",
-  "Respeta a los demás usuarios del parque",
-];
+import { tips } from "../util/messages.js";
+import {
+  operationPoints,
+  operationPanResponder,
+  operationToggleDrawer,
+  operationRequestLocation,
+  operationHaverSineDistance,
+  operationFindNearestPark,
+  operationFetchRouter,
+  operationHandleNearestParkPress,
+} from "../util/functions";
+import { RenderParks } from "../_components/RenderParks";
+import { DRAWER_MIN_HEIGHT } from "../util/constants.js";
+import { SkeletonItem } from "../_components/SkeletonItem";
 
 export default function SearchMaps() {
   const [showInfoContainer, setShowInfoContainer] = useState(false);
@@ -72,230 +58,69 @@ export default function SearchMaps() {
   const animation = useRef(new Animated.Value(DRAWER_MIN_HEIGHT)).current;
   const mapRef = useRef(null);
 
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_, gestureState) => {
-          return Math.abs(gestureState.dy) > 10;
-        },
-        onPanResponderMove: (_, gestureState) => {
-          const newHeight = DRAWER_MIN_HEIGHT - gestureState.dy;
-          if (
-            newHeight >= DRAWER_MIN_HEIGHT &&
-            newHeight <= DRAWER_MAX_HEIGHT
-          ) {
-            animation.setValue(newHeight);
-          }
-        },
-        onPanResponderRelease: (_, gestureState) => {
-          if (gestureState.dy < 0) {
-            Animated.spring(animation, {
-              toValue: DRAWER_MAX_HEIGHT,
-              useNativeDriver: false,
-            }).start();
-          } else {
-            Animated.spring(animation, {
-              toValue: DRAWER_MIN_HEIGHT,
-              useNativeDriver: false,
-            }).start();
-          }
-        },
-      }),
+  const panResponder = useMemo(() => operationPanResponder(animation), []);
+  const toggleDrawer = useCallback(
+    () => operationToggleDrawer(animation),
+    [animation]
+  );
+
+  useEffect(() => {
+    operationRequestLocation(setErrorMsg, setLocation, setIsLoading);
+  }, []);
+
+  const haversineDistance = useCallback(
+    (coords1, coords2) => operationHaverSineDistance(coords1, coords2),
     []
   );
 
-  const toggleDrawer = useCallback(() => {
-    Animated.spring(animation, {
-      toValue:
-        (animation as any)._value === DRAWER_MAX_HEIGHT
-          ? DRAWER_MIN_HEIGHT
-          : DRAWER_MAX_HEIGHT,
-      useNativeDriver: false,
-    }).start();
-  }, [animation]);
-
-  useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setErrorMsg("Permiso de ubicación denegado");
-        return;
-      }
-      let locationWatcher = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.Balanced,
-          timeInterval: 10000,
-          distanceInterval: 10,
-        },
-        async (newLocation) => {
-          setLocation(newLocation);
-        }
-      );
-
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 3000);
-
-      return () => {
-        locationWatcher.remove();
-      };
-    })();
-  }, []);
-
-  const haversineDistance = useCallback((coords1, coords2) => {
-    const toRad = (value) => (value * Math.PI) / 180;
-    const R = 6371; // Radio de la Tierra en km
-
-    const dLat = toRad(coords2.latitude - coords1.latitude);
-    const dLon = toRad(coords2.longitude - coords1.longitude);
-
-    const lat1 = toRad(coords1.latitude);
-    const lat2 = toRad(coords2.latitude);
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-    return R * c;
-  }, []);
-
   const findNearestPark = useCallback(
-    (userCoords, parks) => {
-      let minDistance = Infinity;
-      let closestPark = null;
-
-      parks.forEach((park) => {
-        if (park.latitude !== "notfound" && park.longitude !== "notfound") {
-          const parkCoords = {
-            latitude: parseFloat(park.latitude),
-            longitude: parseFloat(park.longitude),
-          };
-
-          const distance = haversineDistance(userCoords, parkCoords);
-
-          if (distance < minDistance) {
-            minDistance = distance;
-            closestPark = park;
-          }
-        }
-      });
-
-      return closestPark;
-    },
+    (userCoords, parks) =>
+      operationFindNearestPark(userCoords, parks, haversineDistance),
     [haversineDistance]
   );
 
   const fetchRoute = useCallback(async (startCoords, park) => {
-    const endCoords = {
-      latitude: parseFloat(park.latitude),
-      longitude: parseFloat(park.longitude),
-    };
-
-    try {
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/directions/json?origin=${startCoords.latitude},${startCoords.longitude}&destination=${endCoords.latitude},${endCoords.longitude}&key=${GOOGLE_MAPS_APIKEY}`
-      );
-      const points = decodePolyline(
-        response.data.routes[0].overview_polyline.points
-      );
-      setRouteCoordinates(points);
-    } catch (error) {
-      console.error("Error al obtener la ruta:", error);
-    }
+    operationFetchRouter(
+      startCoords,
+      park,
+      setRouteCoordinates,
+      decodePolyline
+    );
   }, []);
 
-  const decodePolyline = useCallback((t) => {
-    let points = [];
-    let index = 0,
-      len = t.length;
-    let lat = 0,
-      lng = 0;
-
-    while (index < len) {
-      let b,
-        shift = 0,
-        result = 0;
-      do {
-        b = t.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      let dlat = result & 1 ? ~(result >> 1) : result >> 1;
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = t.charCodeAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      let dlng = result & 1 ? ~(result >> 1) : result >> 1;
-      lng += dlng;
-
-      points.push({
-        latitude: lat / 1e5,
-        longitude: lng / 1e5,
-      });
-    }
-
-    return points;
-  }, []);
+  const decodePolyline = useCallback(operationPoints, []);
 
   const renderParkItem = useCallback(
     ({ item }) => {
       if (isLoading) {
         return <SkeletonItem />;
       }
-      return (
-        <TouchableOpacity
-          style={styles.parkItem}
-          onPress={() => {
-            if (mapRef.current) {
-              mapRef.current.animateToRegion(
-                {
-                  latitude: parseFloat(item.latitude),
-                  longitude: parseFloat(item.longitude),
-                  latitudeDelta: 0.005,
-                  longitudeDelta: 0.005,
-                },
-                1000
-              );
-            }
-          }}
-        >
-          <View style={styles.parkIcon}>
-            <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
-          </View>
-          <View style={styles.parkInfo}>
-            <Text style={styles.parkName}>{item.Column2}</Text>
-            <Text style={styles.parkDistance}>{item.Column3}</Text>
-          </View>
-        </TouchableOpacity>
-      );
+      return RenderParks({ item, mapRef });
     },
     [isLoading]
   );
 
-  const memoizedParques = useMemo(() => parques.filter(parque => parque.latitude !== "notfound" && parque.longitude !== "notfound"), []);
+  const memorizedParques = useMemo(
+    () =>
+      parques.filter(
+        (parque) =>
+          parque.latitude !== "notfound" && parque.longitude !== "notfound"
+      ),
+    []
+  );
 
   const handleNearestParkPress = useCallback(() => {
-    if (location) {
-      if (selectedButton === "cercano") {
-        setSelectedButton(null);
-        setNearestPark(null);
-        setRouteCoordinates([]);
-      } else {
-        const closest = findNearestPark(location.coords, memoizedParques);
-        setNearestPark(closest);
-        setSelectedButton("cercano");
-        if (closest) {
-          fetchRoute(location.coords, closest);
-        }
-      }
-    }
-  }, [location, memoizedParques, findNearestPark, fetchRoute, selectedButton]);
+    operationHandleNearestParkPress(
+      selectedButton,
+      setSelectedButton,
+      setNearestPark,
+      setRouteCoordinates,
+      findNearestPark,
+      location,
+      memorizedParques,
+      fetchRoute
+    );
+  }, [location, memorizedParques, findNearestPark, fetchRoute, selectedButton]);
 
   const handleOptimalParkPress = useCallback(() => {
     if (selectedButton === "optimo") {
@@ -347,7 +172,7 @@ export default function SearchMaps() {
         provider={PROVIDER_DEFAULT}
         initialRegion={initialRegion}
       >
-        {memoizedParques.map((parque, index) => {
+        {memorizedParques.map((parque, index) => {
           if (
             parque.latitude !== "notfound" &&
             parque.longitude !== "notfound"
@@ -434,7 +259,7 @@ export default function SearchMaps() {
         </View>
 
         <FlatList
-          data={isLoading ? Array(10).fill({}) : memoizedParques}
+          data={isLoading ? Array(10).fill({}) : memorizedParques}
           renderItem={renderParkItem}
           keyExtractor={(item, index) => index.toString()}
           contentContainerStyle={styles.parkList}
