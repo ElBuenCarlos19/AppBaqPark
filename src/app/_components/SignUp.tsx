@@ -1,6 +1,7 @@
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from "expo-web-browser";
 
 const SignUp = () => {
     const router = useRouter();

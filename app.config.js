@@ -2,7 +2,7 @@ export default {
     expo: {
       name: "AppBaqPark",
       slug: "AppBaqPark",
-      scheme: "acme",
+      scheme: "com.appbaqpark",
       userInterfaceStyle: "automatic",
       orientation: "default",
       web: {

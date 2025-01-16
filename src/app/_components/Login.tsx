@@ -1,3 +1,4 @@
+import React from "react";
 import { Pressable, Text, TextInput } from "react-native";
 import { useAuthentication } from "../auth/AuthenticationContext";
 export default function Login({styles}) {
