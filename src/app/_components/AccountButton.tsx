@@ -1,3 +1,4 @@
+import React from "react";
 import { useModalContext } from "./userModalDisplayContext";
 import { Ionicons } from "@expo/vector-icons";
 import { View, StyleSheet, TouchableOpacity } from "react-native";

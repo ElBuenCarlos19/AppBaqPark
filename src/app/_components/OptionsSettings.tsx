@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, Switch, StyleSheet } from "react-native";
 import ButtonsSettings from "./ButtonsSettings";
 
