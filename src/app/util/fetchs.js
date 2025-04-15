@@ -1,4 +1,5 @@
 import axios from "axios";
+import { supabase } from "./supabase";
 
 export const peticion = async (startCoords, endCoords, GOOGLE_MAPS_APIKEY, setRouteCoordinates, decodePolyline) => {
     try {
@@ -13,3 +14,15 @@ export const peticion = async (startCoords, endCoords, GOOGLE_MAPS_APIKEY, setRo
         console.error("Error al obtener la ruta:", error);
     }
 }
+
+export const fetchParques = async (setParques) => {
+    try {
+        // 1. Traer los parques con sus barrios
+        const { data: parquesData, error: errorParques } = await supabase.from('vista_parques').select('*');
+        if (errorParques) throw errorParques;
+        //console.log("Parques:", parquesData);
+        setParques(parquesData);
+    } catch (error) {
+        console.error("Error fetching parques:", error);
+    }
+};

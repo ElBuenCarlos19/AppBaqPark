@@ -2,7 +2,7 @@ import { PanResponder } from "react-native";
 import { Animated } from "react-native";
 import { DRAWER_MAX_HEIGHT, DRAWER_MIN_HEIGHT, GOOGLE_MAPS_APIKEY } from "./constants";
 import * as Location from "expo-location";
-import { peticion } from "../util/fetchs.js";
+import { fetchParques, peticion } from "../util/fetchs.js";
 
 
 export const operationPoints = (t) => {
@@ -179,3 +179,8 @@ export const operationHandleNearestParkPress = (selectedButton, setSelectedButto
         }
     }
 }
+
+export const operationGetParques = async (setParques) => {
+    await fetchParques(setParques);
+}
+
