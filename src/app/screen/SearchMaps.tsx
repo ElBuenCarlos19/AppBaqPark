@@ -199,7 +199,7 @@ export default function SearchMaps() {
         initialRegion={initialRegion}
       >
         {memorizedParques.map((parque, index) => {
-          const { latitude, longitude } = parque;
+          const { latitude, longitude, column2, column3 } = parque;
           if (
             !isNaN(latitude) && !isNaN(longitude)
           ) {
@@ -210,8 +210,8 @@ export default function SearchMaps() {
                   latitude: parseFloat(latitude),
                   longitude: parseFloat(longitude),
                 }}
-                title={parque.column2}
-                description={parque.column3}
+                title={column2}
+                description={column3}
               />
             );
           }
