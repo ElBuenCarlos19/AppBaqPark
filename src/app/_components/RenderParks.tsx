@@ -23,8 +23,8 @@ export const RenderParks = ({ item, mapRef }) => {
         <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
       </View>
       <View style={styles.parkInfo}>
-        <Text style={styles.parkName}>{item.Column2}</Text>
-        <Text style={styles.parkDistance}>{item.Column3}</Text>
+        <Text style={styles.parkName}>{item.column2}</Text>
+        <Text style={styles.parkDistance}>{item.column3}</Text>
       </View>
     </TouchableOpacity>
   );

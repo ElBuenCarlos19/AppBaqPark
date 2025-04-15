@@ -28,7 +28,7 @@ import {
 import theme from "../../theme.js";
 import AccountButton from "../_components/AccountButton";
 import { InfoParks } from "../_components/InfoParks";
-import parques from "parques.json";
+//import parques from "parques.json";
 import { tips } from "../util/messages.js";
 import {
   operationPoints,
@@ -39,6 +39,7 @@ import {
   operationFindNearestPark,
   operationFetchRouter,
   operationHandleNearestParkPress,
+  operationGetParques,
 } from "../util/functions";
 import { RenderParks } from "../_components/RenderParks";
 import { DRAWER_MIN_HEIGHT } from "../util/constants.js";
@@ -55,6 +56,7 @@ export default function SearchMaps() {
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [showTipModal, setShowTipModal] = useState(false);
   const [currentTip, setCurrentTip] = useState("");
+  const [parques, setParques] = useState([]);
   const animation = useRef(new Animated.Value(DRAWER_MIN_HEIGHT)).current;
   const mapRef = useRef(null);
 
@@ -64,9 +66,21 @@ export default function SearchMaps() {
     [animation]
   );
 
+  const handlGetParques = useCallback(
+    () => {
+    operationGetParques(setParques);
+  },[]);
+
+
   useEffect(() => {
-    operationRequestLocation(setErrorMsg, setLocation, setIsLoading);
-  }, []);
+    if (!location) {
+      operationRequestLocation(setErrorMsg, setLocation, setIsLoading);
+    }
+    if (parques.length === 0) {
+      handlGetParques();
+    }
+  }, [location, parques]);
+
 
   const haversineDistance = useCallback(
     (coords1, coords2) => operationHaverSineDistance(coords1, coords2),
@@ -92,22 +106,34 @@ export default function SearchMaps() {
 
   const renderParkItem = useCallback(
     ({ item }) => {
-      if (isLoading) {
+      if (isLoading || !item?.id) {
         return <SkeletonItem />;
       }
-      return RenderParks({ item, mapRef });
+      return <RenderParks item={item} mapRef={mapRef} />;      
     },
     [isLoading]
   );
 
-  const memorizedParques = useMemo(
-    () =>
-      parques.filter(
-        (parque) =>
-          parque.latitude !== "notfound" && parque.longitude !== "notfound"
-      ),
-    []
-  );
+  const memorizedParques = useMemo(() => {
+    if (!location?.coords || !parques) {
+        return [];
+    }
+
+    return parques.filter((parque) => {
+        const { latitude, longitude } = parque;
+
+        if (isNaN(parseFloat(latitude)) || isNaN(parseFloat(longitude))) {
+            return false;
+        }
+
+        const distance = haversineDistance(location.coords, {
+            latitude: parseFloat(latitude),
+            longitude: parseFloat(longitude),
+        });
+
+        return distance <= 5;
+    });
+}, [location, parques]);
 
   const handleNearestParkPress = useCallback(() => {
     operationHandleNearestParkPress(
@@ -173,19 +199,19 @@ export default function SearchMaps() {
         initialRegion={initialRegion}
       >
         {memorizedParques.map((parque, index) => {
+          const { latitude, longitude } = parque;
           if (
-            parque.latitude !== "notfound" &&
-            parque.longitude !== "notfound"
+            !isNaN(latitude) && !isNaN(longitude)
           ) {
             return (
               <Marker
                 key={index}
                 coordinate={{
-                  latitude: parseFloat(String(parque.latitude)),
-                  longitude: parseFloat(String(parque.longitude)),
+                  latitude: parseFloat(latitude),
+                  longitude: parseFloat(longitude),
                 }}
-                title={parque.Column2}
-                description={parque.Column3}
+                title={parque.column2}
+                description={parque.column3}
               />
             );
           }
@@ -261,7 +287,9 @@ export default function SearchMaps() {
         <FlatList
           data={isLoading ? Array(10).fill({}) : memorizedParques}
           renderItem={renderParkItem}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, index) =>
+            item && item.id ? String(item.id) : `placeholder-${index}`
+          }
           contentContainerStyle={styles.parkList}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
