@@ -4,7 +4,7 @@ import AccountButton from '../_components/AccountButton';
 import { useAuthentication } from '../auth/AuthenticationContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useModalContext } from '../_components/userModalDisplayContext';
-import RoutineItem from '../_components/RoutineItem';
+import RutineItem from '../_components/RutineItem';
 const routineTypes = [
   { title: 'Rutinas Básicas', image: require('../../../assets/basic.png') },
   { title: 'Rutinas Intermedias', image: require('../../../assets/intermediate.png') },
@@ -55,7 +55,7 @@ export default function Rutines() {
       <AccountButton />
       <View style={styles.routineGrid}>
         {routineTypes.map((routine, index) => (
-          <RoutineItem key={index} routine={routine} /> // Usa el nuevo componente
+          <RutineItem key={index} routine={routine} SessionRequired={routine?.title==="Rutinas Personalizadas"?true:false} /> // Usa el nuevo componente
         ))}
       </View>
 
