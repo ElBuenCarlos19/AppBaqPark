@@ -1,39 +1,48 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import type React from "react"
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native"
+import MaterialIcons from "react-native-vector-icons/MaterialIcons"
 
-export const RenderParks = ({ item, mapRef }) => {
+interface RenderParksProps {
+  item: any
+  mapRef: any
+  onPress?: (item: any) => void
+}
+
+export const RenderParks: React.FC<RenderParksProps> = ({ item, mapRef, onPress }) => {
+  // Assuming this is similar to your existing RenderParks component
+  const handlePress = () => {
+    // First, handle any existing functionality like centering the map
+    if (mapRef && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: Number.parseFloat(String(item.latitude)),
+        longitude: Number.parseFloat(String(item.longitude)),
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      })
+    }
+
+    // Then call the onPress handler if provided
+    if (onPress) {
+      onPress(item)
+    }
+  }
+
   return (
-    <TouchableOpacity
-      style={styles.parkItem}
-      onPress={() => {
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(
-            {
-              latitude: parseFloat(item.latitude),
-              longitude: parseFloat(item.longitude),
-              latitudeDelta: 0.005,
-              longitudeDelta: 0.005,
-            },
-            1000
-          );
-        }
-      }}
-    >
+    <TouchableOpacity style={styles.parkItem} onPress={handlePress}>
       <View style={styles.parkIcon}>
-        <Ionicons name="leaf-outline" size={24} color="#4CAF50" />
+        <MaterialIcons name="park" size={24} color="#4CAF50" />
       </View>
       <View style={styles.parkInfo}>
-        <Text style={styles.parkName}>{item.column2}</Text>
-        <Text style={styles.parkDistance}>{item.column3}</Text>
+        <Text style={styles.parkName}>{item.Column2}</Text>
+        <Text style={styles.parkDescription} numberOfLines={1}>
+          {item.Column3}
+        </Text>
       </View>
     </TouchableOpacity>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
-  parkList: {
-    paddingBottom: 20,
-  },
   parkItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -57,8 +66,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  parkDistance: {
+  parkDescription: {
     fontSize: 14,
     color: "#666",
   },
-});
+})
