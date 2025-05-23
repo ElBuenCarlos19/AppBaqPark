@@ -27,10 +27,16 @@ export default {
       },
       extra: {
         GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
+        PARKS_KEY: process.env.PARKS_KEY,
+        SUPABASE_URL: process.env.SUPABASE_URL,
+        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
         eas: {
           projectId: "bd34d188-c154-409b-8314-797e6d2ee458",
           secrets: {
             GOOGLE_MAPS_API_KEY: true,
+            PARKS_KEY: true,
+            SUPABASE_URL: true,
+            SUPABASE_ANON_KEY: true,
           },
         },
       },

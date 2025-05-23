@@ -12,11 +12,7 @@
       }
     },
     "preview": {
-      "distribution": "internal",
-      "env": {
-        "GOOGLE_MAPS_API_KEY": "GOOGLE_MAPS_API_KEY",
-        "PARKS_KEY": "PARKS_KEY"
-      }
+      "distribution": "internal"
     },
     "production": {
       "autoIncrement": true
